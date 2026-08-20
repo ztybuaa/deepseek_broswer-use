@@ -27,6 +27,16 @@ export interface PageSnapshot {
   elements: SnapshotElement[]
 }
 
+/** Project a snapshot to model-facing prose. */
+export function formatSnapshot(snapshot: PageSnapshot): string {
+  const lines = [`Title: ${snapshot.title}`, `URL: ${snapshot.url}`, '', 'Interactive elements:']
+  for (const el of snapshot.elements) {
+    lines.push(`[${el.ref}] ${el.role} "${el.name}"`)
+  }
+  if (snapshot.elements.length === 0) lines.push('(none)')
+  return lines.join('\n')
+}
+
 /**
  * One live browser session: a launched chromium, its context, and a single
  * page. The owning manager owns its lifecycle.
@@ -95,6 +105,24 @@ export class BrowserSession {
     }
     this.refs = refs
     return { title, url, elements }
+  }
+
+  /** Click the element addressed by `ref` from the most recent snapshot. */
+  async click(ref: number): Promise<void> {
+    const locator = this.refs.get(ref)
+    if (locator === undefined) {
+      throw new Error(`browser-use: no element for ref ${ref}; call snapshot first`)
+    }
+    await locator.click({ timeout: this.config.timeoutMs })
+  }
+
+  /** Type text into the input addressed by `ref` from the most recent snapshot. */
+  async type(ref: number, text: string): Promise<void> {
+    const locator = this.refs.get(ref)
+    if (locator === undefined) {
+      throw new Error(`browser-use: no element for ref ${ref}; call snapshot first`)
+    }
+    await locator.fill(text, { timeout: this.config.timeoutMs })
   }
 
   private async roleOf(loc: Locator): Promise<string> {

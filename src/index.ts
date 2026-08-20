@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { BrowserSessionManager } from './session.ts'
+import { browserTools } from './tools.ts'
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'browser-use'
@@ -42,4 +43,7 @@ export function apply(ctx: Context, config: Config): void {
       void manager.dispose()
     }
   })
+  for (const tool of browserTools(manager)) {
+    ctx.tools.register(tool)
+  }
 }
