@@ -1,4 +1,5 @@
-﻿research/
+research/
 _research/
 .firecrawl/
 node_modules/
+lib/
