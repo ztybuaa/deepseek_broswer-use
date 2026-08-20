@@ -1,4 +1,4 @@
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
+import { chromium, type Browser, type BrowserContext, type Locator, type Page } from 'playwright'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,6 +13,20 @@ export interface BrowserConfig {
   timeoutMs: number
 }
 
+/** One element in a snapshot, addressed by its 1-based `ref`. */
+export interface SnapshotElement {
+  ref: number
+  role: string
+  name: string
+}
+
+/** The accessibility snapshot a tool returns to the model. */
+export interface PageSnapshot {
+  title: string
+  url: string
+  elements: SnapshotElement[]
+}
+
 /**
  * One live browser session: a launched chromium, its context, and a single
  * page. The owning manager owns its lifecycle.
@@ -23,6 +37,8 @@ export class BrowserSession {
   private readonly config: BrowserConfig
   private readonly homeDir: string
   readonly page: Page
+  /** ref (1-based index) -> live locator, captured by the most recent snapshot. */
+  private refs = new Map<number, Locator>()
 
   private constructor(browser: Browser, context: BrowserContext, page: Page, config: BrowserConfig, homeDir: string) {
     this.browser = browser
@@ -56,6 +72,46 @@ export class BrowserSession {
   /** Open a URL and wait for its load event. */
   async navigate(url: string): Promise<void> {
     await this.page.goto(url, { waitUntil: 'load', timeout: this.config.timeoutMs })
+  }
+
+  /**
+   * Project the current page into an accessibility snapshot: title, URL, and
+   * an indexed list of interactive elements. The 1-based indices become the
+   * `ref`s that click/type resolve against this snapshot.
+   */
+  async snapshot(): Promise<PageSnapshot> {
+    const title = await this.page.title().catch(() => '')
+    const url = this.page.url()
+    const selector = 'a[href], button, input, select, textarea, [role="button"], [role="link"], [role="textbox"], [role="combobox"], [contenteditable="true"]'
+    const locator = this.page.locator(selector)
+    const count = await locator.count()
+    const elements: SnapshotElement[] = []
+    const refs = new Map<number, Locator>()
+    for (let i = 0; i < count; i++) {
+      const el = locator.nth(i)
+      const ref = i + 1
+      elements.push({ ref, role: await this.roleOf(el), name: await this.nameOf(el) })
+      refs.set(ref, el)
+    }
+    this.refs = refs
+    return { title, url, elements }
+  }
+
+  private async roleOf(loc: Locator): Promise<string> {
+    const explicit = await loc.getAttribute('role').catch(() => null)
+    if (explicit) return explicit
+    const tag = await loc.evaluate((el) => (el as HTMLElement).tagName.toLowerCase()).catch(() => '')
+    const byTag: Record<string, string> = { a: 'link', button: 'button', input: 'textbox', select: 'combobox', textarea: 'textbox' }
+    return byTag[tag] ?? tag
+  }
+
+  private async nameOf(loc: Locator): Promise<string> {
+    const label = await loc.getAttribute('aria-label').catch(() => null)
+    if (label) return label
+    const placeholder = await loc.getAttribute('placeholder').catch(() => null)
+    if (placeholder) return placeholder
+    const text = await loc.innerText().catch(() => '')
+    return text.trim()
   }
 
   /** Close the browser and release its resources. */
