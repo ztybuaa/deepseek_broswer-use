@@ -125,6 +125,22 @@ export class BrowserSession {
     await locator.fill(text, { timeout: this.config.timeoutMs })
   }
 
+  /** Scroll the page by a pixel amount in the given direction. */
+  async scroll(direction: 'up' | 'down', amount: number): Promise<void> {
+    const delta = direction === 'down' ? amount : -amount
+    await this.page.evaluate((n) => window.scrollBy(0, n), delta)
+  }
+
+  /** Capture the current viewport as a PNG at the given path. */
+  async screenshot(path: string): Promise<void> {
+    await this.page.screenshot({ path, timeout: this.config.timeoutMs })
+  }
+
+  /** Extract the visible text content of the page body. */
+  async extractText(): Promise<string> {
+    return await this.page.locator('body').innerText().catch(() => '')
+  }
+
   private async roleOf(loc: Locator): Promise<string> {
     const explicit = await loc.getAttribute('role').catch(() => null)
     if (explicit) return explicit

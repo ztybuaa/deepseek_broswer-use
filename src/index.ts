@@ -17,6 +17,8 @@ export interface Config {
   executablePath?: string
   /** Navigation timeout in milliseconds. */
   timeoutMs: number
+  /** Directory where screenshots land when no path is requested. */
+  screenshotDir: string
 }
 
 /** Schemastery schema validating {@link Config}; deployment-varying fields default here. */
@@ -24,6 +26,7 @@ export const Config: z<Config> = z.object({
   headless: z.boolean().default(false),
   executablePath: z.string(),
   timeoutMs: z.number().default(30000),
+  screenshotDir: z.string().default('.'),
 })
 
 /**
@@ -43,7 +46,7 @@ export function apply(ctx: Context, config: Config): void {
       void manager.dispose()
     }
   })
-  for (const tool of browserTools(manager)) {
+  for (const tool of browserTools(manager, config.screenshotDir)) {
     ctx.tools.register(tool)
   }
 }
