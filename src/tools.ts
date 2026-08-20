@@ -145,5 +145,15 @@ export function browserTools(manager: BrowserSessionManager, screenshotDir: stri
         return await session.extractText()
       },
     }),
+    defineTool({
+      name: 'browser_close',
+      description: 'Close the current browser session and release its resources. A later browser tool starts a fresh session.',
+      parameters: {},
+      output: { schema: okSchema, render: renderOk },
+      async execute(_args, exec) {
+        const closed = await manager.closeSession(exec.agent)
+        return { ok: true, message: closed ? 'browser session closed' : 'no active browser session to close' }
+      },
+    }),
   ]
 }

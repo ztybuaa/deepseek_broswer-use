@@ -133,4 +133,26 @@ describe('browser tools', () => {
     expect(r.isError).toBe(false)
     expect(String(r.value)).toContain('About page')
   })
+
+  it('runs a full browse flow and closes cleanly', async () => {
+    const nav = await call('browser_navigate', { url: base })
+    expect(nav.isError).toBe(false)
+
+    const text = await call('browser_extract', { mode: 'text' })
+    expect(String(text.value)).toContain('About')
+
+    const snap = (await call('browser_snapshot', {})).value as PageSnapshot
+    const linkRef = refOf(snap, 'link', 'About')
+    const clicked = await call('browser_click', { ref: linkRef })
+    expect(clicked.isError).toBe(false)
+    expect(((await call('browser_snapshot', {})).value as PageSnapshot).url).toContain('/about')
+
+    const closed = await call('browser_close', {})
+    expect(closed.isError).toBe(false)
+    expect((closed.value as { message: string }).message).toBe('browser session closed')
+
+    const reopened = await call('browser_navigate', { url: base })
+    expect(reopened.isError).toBe(false)
+    expect((reopened.value as PageSnapshot).title).toBe('Home')
+  })
 })
