@@ -2,7 +2,7 @@
 
 让 DeepSeek Harness 的 agent 操控浏览器的插件（Playwright）。元素定位用 accessibility 快照 + 数字索引 `ref`（见 [ADR-0001](docs/adr/0001-accessibility-snapshot-element-refs.md)），模型按 `ref` 引用元素、不手写 selector。
 
-## 工具（8 个）
+## 工具（9 个）
 
 | 工具 | 说明 |
 |---|---|
@@ -10,6 +10,7 @@
 | `browser_snapshot` | 返回当前页可交互元素快照（编号 `[1] [2]…`）|
 | `browser_click` | 按 `ref` 点击元素 |
 | `browser_type` | 按 `ref` 往输入框打字 |
+| `browser_press_key` | 按键盘按键（Enter/Escape/Tab/方向键）|
 | `browser_scroll` | 上/下滚动 |
 | `browser_screenshot` | 截图保存为 PNG |
 | `browser_extract` | 抽取页面正文文本 |

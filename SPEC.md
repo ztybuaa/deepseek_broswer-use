@@ -11,7 +11,7 @@
 - **会话**：每 agent 一个独立浏览器实例，`browser_close` 或插件卸载时销毁。
 - 术语见 `CONTEXT.md`。
 
-## 工具（8 个，统一 `browser_*` 前缀）
+## 工具（9 个，统一 `browser_*` 前缀）
 
 | 工具 | 参数 | 返回 |
 |---|---|---|
@@ -19,6 +19,7 @@
 | `browser_snapshot` | — | 快照（标题/URL + 可交互元素编号列表）|
 | `browser_click` | `ref`（数字索引） | `ok` / `message` |
 | `browser_type` | `ref`, `text` | `ok` / `message` |
+| `browser_press_key` | `key`（Enter/Escape/Tab/方向键） | `ok` / `message` |
 | `browser_scroll` | `direction`(`up`/`down`), `amount`? | `ok` / `message` |
 | `browser_screenshot` | `path`? | 文件绝对路径 |
 | `browser_extract` | `mode`(`text`) | 页面正文文本 |

@@ -92,7 +92,7 @@ export class BrowserSession {
   async snapshot(): Promise<PageSnapshot> {
     const title = await this.page.title().catch(() => '')
     const url = this.page.url()
-    const selector = 'a[href], button, input, select, textarea, [role="button"], [role="link"], [role="textbox"], [role="combobox"], [contenteditable="true"]'
+    const selector = 'a[href]:visible, button:visible, input:visible, select:visible, textarea:visible, [role="button"]:visible, [role="link"]:visible, [role="textbox"]:visible, [role="combobox"]:visible, [contenteditable="true"]:visible'
     const locator = this.page.locator(selector)
     const count = await locator.count()
     const elements: SnapshotElement[] = []
@@ -141,6 +141,16 @@ export class BrowserSession {
     return await this.page.locator('body').innerText().catch(() => '')
   }
 
+  /** Press a keyboard key on the focused element (e.g. Enter, Escape, Tab). */
+  async pressKey(key: string): Promise<void> {
+    await this.page.keyboard.press(key)
+  }
+
+  /** Whether the underlying browser is still connected. */
+  isAlive(): boolean {
+    return this.browser.isConnected()
+  }
+
   private async roleOf(loc: Locator): Promise<string> {
     const explicit = await loc.getAttribute('role').catch(() => null)
     if (explicit) return explicit
@@ -184,10 +194,18 @@ export class BrowserSessionManager {
   async requireSession(key?: object): Promise<BrowserSession> {
     if (key !== undefined) {
       const existing = this.sessions.get(key)
-      if (existing !== undefined) return existing
+      if (existing !== undefined) {
+        if (existing.isAlive()) return existing
+        this.sessions.delete(key)
+        this.live.delete(existing)
+      }
       const created = await this.createSession()
       this.sessions.set(key, created)
       return created
+    }
+    if (this.defaultSession !== undefined && !this.defaultSession.isAlive()) {
+      this.live.delete(this.defaultSession)
+      this.defaultSession = undefined
     }
     this.defaultSession ??= await this.createSession()
     return this.defaultSession

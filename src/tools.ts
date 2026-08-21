@@ -103,6 +103,19 @@ export function browserTools(manager: BrowserSessionManager, screenshotDir: stri
       },
     }),
     defineTool({
+      name: 'browser_press_key',
+      description: 'Press a keyboard key on the current page (e.g. Enter to submit a form, Escape to close a modal, Tab to move focus).',
+      parameters: {
+        key: { type: 'string', required: true, description: 'The key to press, e.g. Enter, Escape, Tab, ArrowDown' },
+      },
+      output: { schema: okSchema, render: renderOk },
+      async execute(args, exec) {
+        const session = await manager.requireSession(exec.agent)
+        await session.pressKey(args.key)
+        return { ok: true, message: `pressed ${args.key}` }
+      },
+    }),
+    defineTool({
       name: 'browser_scroll',
       description: 'Scroll the page up or down by a pixel amount.',
       parameters: {
